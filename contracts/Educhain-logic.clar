@@ -239,15 +239,15 @@
 
 ;; Helper function to validate achievement input
 (define-private (validate-achievement-input 
-  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-  (description (string-ascii MAX-DESCRIPTION-LENGTH))
-  (category (string-ascii MAX-CATEGORY-LENGTH))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
+  (category (string-ascii 50))
   (reward-amount uint)
 )
   (and
-    (validate-string-length name MAX-ACHIEVEMENT-NAME-LENGTH)
-    (validate-string-length description MAX-DESCRIPTION-LENGTH)
-    (validate-string-length category MAX-CATEGORY-LENGTH)
+    (validate-string-length name u100)
+    (validate-string-length description u500)
+    (validate-string-length category u50)
     (validate-reward-amount reward-amount)
     (not (is-eq name ""))
     (not (is-eq category ""))
@@ -256,15 +256,15 @@
 
 ;; Helper function to validate certification input
 (define-private (validate-certification-input
-  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-  (description (string-ascii MAX-DESCRIPTION-LENGTH))
-  (required-achievements (list uint))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
+  (required-achievements-count uint)
 )
   (and
-    (validate-string-length name MAX-ACHIEVEMENT-NAME-LENGTH)
-    (validate-string-length description MAX-DESCRIPTION-LENGTH)
+    (validate-string-length name u100)
+    (validate-string-length description u500)
     (not (is-eq name ""))
-    (> (len required-achievements) u0)
+    (> required-achievements-count u0)
   )
 )
 
