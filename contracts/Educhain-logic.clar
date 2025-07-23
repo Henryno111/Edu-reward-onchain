@@ -303,10 +303,16 @@
 ;; Pause or unpause the contract (owner only)
 (define-public (set-contract-paused (paused bool))
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (var-set contract-paused paused)
-    (ok true)
+    (if (not (is-eq tx-sender CONTRACT-OWNER))
+      (err ERR-UNAUTHORIZED)
+      (if (is-contract-paused)
+        (err ERR-INVALID-INPUT)
+        (begin
+          (var-set contract-paused paused)
+          (ok true)
+        )
+      )
+    )
   )
 )
 
@@ -317,8 +323,8 @@
   (description (string-ascii 500))
 )
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
+    (if (not (is-eq tx-sender CONTRACT-OWNER)) (err ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
     (assert! (validate-string-length name u100) ERR-INVALID-INPUT)
     (assert! (validate-string-length description u500) ERR-INVALID-INPUT)
     (assert! (not (is-eq name "")) ERR-INVALID-INPUT)
@@ -336,17 +342,23 @@
 
 ;; Deactivate an authorized issuer (owner only)
 (define-public (deactivate-issuer (issuer principal))
-  ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
-  ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-  (match (map-get? authorized-issuers issuer)
-    issuer-data 
-    (begin
-      (map-set authorized-issuers issuer
-        (merge issuer-data (tuple active false))
+  (begin
+    (if (not (is-eq tx-sender CONTRACT-OWNER))
+      (err ERR-UNAUTHORIZED)
+      (if (is-contract-paused)
+        (err ERR-INVALID-INPUT)
+        (match (map-get? authorized-issuers issuer)
+          issuer-data 
+          (begin
+            (map-set authorized-issuers issuer
+              (merge issuer-data (tuple active false))
+            )
+            (ok true)
+          )
+          (err ERR-INVALID-INPUT)
+        )
       )
-      (ok true)
     )
-    (err ERR-INVALID-INPUT)
   )
 )
 
@@ -360,8 +372,8 @@
   (reward-amount uint)
 )
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (assert! (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
+    (if (not (is-authorized-issuer tx-sender)) (err ERR-UNAUTHORIZED)
     (assert! (validate-achievement-input name description category reward-amount) ERR-INVALID-INPUT)
     (let ((new-achievement-id (+ (var-get total-achievements) u1)))
       (map-set achievement-definitions new-achievement-id
@@ -387,8 +399,8 @@
   (achievement-id uint)
 )
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (assert! (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
+    (if (not (is-authorized-issuer tx-sender)) (err ERR-UNAUTHORIZED)
     (assert! (not (user-has-achievement user achievement-id)) ERR-INVALID-INPUT)
     (assert! (not (user-achievement-limit-reached user)) ERR-LIMIT-EXCEEDED)
     (match (get-achievement-definition achievement-id)
@@ -425,7 +437,7 @@
 ;; Deactivate an achievement (issuer or owner only)
 (define-public (deactivate-achievement (achievement-id uint))
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
     (match (get-achievement-definition achievement-id)
       achievement-def 
       (begin
@@ -449,8 +461,8 @@
   (required-achievements (list uint))
 )
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (assert! (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
+    (if (not (is-authorized-issuer tx-sender)) (err ERR-UNAUTHORIZED)
     (assert! (validate-certification-input name description required-achievements) ERR-INVALID-INPUT)
     (let ((new-certification-id (+ (var-get total-certifications) u1)))
       (map-set certifications new-certification-id
@@ -475,8 +487,8 @@
   (certification-id uint)
 )
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (assert! (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
+    (if (not (is-authorized-issuer tx-sender)) (err ERR-UNAUTHORIZED)
     (assert! (not (user-has-certification user certification-id)) ERR-INVALID-INPUT)
     (assert! (not (user-certification-limit-reached user)) ERR-LIMIT-EXCEEDED)
     (match (get-certification-definition certification-id)
@@ -501,7 +513,7 @@
 ;; Deactivate a certification (issuer or owner only)
 (define-public (deactivate-certification (certification-id uint))
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
     (match (get-certification-definition certification-id)
       certification-def 
       (begin
@@ -521,7 +533,7 @@
 ;; Claim reward for an achievement (user only)
 (define-public (claim-achievement-reward (achievement-id uint))
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
     (match (get-user-achievement tx-sender achievement-id)
       user-achievement 
       (begin
@@ -605,8 +617,8 @@
   (achievement-ids (list uint))
 )
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (assert! (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
+    (if (not (is-authorized-issuer tx-sender)) (err ERR-UNAUTHORIZED)
     (assert! (> (len achievement-ids) u0) ERR-INVALID-INPUT)
     (assert! (<= (len achievement-ids) u10) ERR-LIMIT-EXCEEDED) ;; Limit batch size
     (fold award-single-achievement achievement-ids (ok true))
@@ -664,7 +676,7 @@
 ;; Batch claim rewards for multiple achievements (user only)
 (define-public (batch-claim-rewards (achievement-ids (list uint)))
   (begin
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
+    (if (is-contract-paused) (err ERR-INVALID-INPUT)
     (assert! (> (len achievement-ids) u0) ERR-INVALID-INPUT)
     (assert! (<= (len achievement-ids) u5) ERR-LIMIT-EXCEEDED) ;; Limit batch size
     (fold claim-single-reward achievement-ids (ok u0))
@@ -782,7 +794,7 @@
 ;; Fund the contract (owner only)
 (define-public (fund-contract (amount uint))
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
+    (if (not (is-eq tx-sender CONTRACT-OWNER)) (err ERR-UNAUTHORIZED)
     (assert! (> amount u0) ERR-INVALID-INPUT)
     (var-set contract-balance (+ (var-get contract-balance) amount))
     (ok (var-get contract-balance))
@@ -792,7 +804,7 @@
 ;; Withdraw contract funds (owner only)
 (define-public (withdraw-contract-funds (amount uint))
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
+    (if (not (is-eq tx-sender CONTRACT-OWNER)) (err ERR-UNAUTHORIZED)
     (assert! (> amount u0) ERR-INVALID-INPUT)
     (assert! (>= (var-get contract-balance) amount) ERR-INSUFFICIENT-BALANCE)
     (var-set contract-balance (- (var-get contract-balance) amount))
@@ -803,7 +815,7 @@
 ;; Emergency pause all operations (owner only)
 (define-public (emergency-pause)
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
+    (if (not (is-eq tx-sender CONTRACT-OWNER)) (err ERR-UNAUTHORIZED)
     (var-set contract-paused true)
     (ok true)
   )
@@ -812,7 +824,7 @@
 ;; Resume operations after emergency pause (owner only)
 (define-public (resume-operations)
   (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
+    (if (not (is-eq tx-sender CONTRACT-OWNER)) (err ERR-UNAUTHORIZED)
     (var-set contract-paused false)
     (ok true)
   )
