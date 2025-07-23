@@ -418,23 +418,40 @@
 ;; Get comprehensive user report
 (define-read-only (get-user-report (user principal))
   (match (map-get? user-profiles user)
-    profile {
-      user: user,
-      profile: {
-        total-achievements: (get total-achievements profile),
-        total-rewards-claimed: (get total-rewards-claimed profile),
-        total-points: (get total-points profile),
-        joined-at: (get joined-at profile),
-        last-activity: (get last-activity profile)
-      },
-      contract-stats: {
-        total-achievements: (var-get total-achievements),
-        total-certifications: (var-get total-certifications),
-        total-users: (var-get total-users),
-        contract-balance: (var-get contract-balance)
-      }
-    }
-    none))
+    profile (tuple
+      (user user)
+      (profile (tuple
+        (total-achievements (get total-achievements profile))
+        (total-rewards-claimed (get total-rewards-claimed profile))
+        (total-points (get total-points profile))
+        (joined-at (get joined-at profile))
+        (last-activity (get last-activity profile))
+      ))
+      (contract-stats (tuple
+        (total-achievements (var-get total-achievements))
+        (total-certifications (var-get total-certifications))
+        (total-users (var-get total-users))
+        (contract-balance (var-get contract-balance))
+      ))
+    )
+    (tuple
+      (user user)
+      (profile (tuple
+        (total-achievements u0)
+        (total-rewards-claimed u0)
+        (total-points u0)
+        (joined-at u0)
+        (last-activity u0)
+      ))
+      (contract-stats (tuple
+        (total-achievements (var-get total-achievements))
+        (total-certifications (var-get total-certifications))
+        (total-users (var-get total-users))
+        (contract-balance (var-get contract-balance))
+      ))
+    )
+  )
+)
 
 ;; Get issuer information
 (define-read-only (get-issuer-info (issuer principal))
