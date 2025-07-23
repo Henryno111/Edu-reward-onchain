@@ -5,7 +5,7 @@
 ;; certifications, and rewards on the Stacks blockchain
 
 ;; constants
-(define-constant CONTRACT-OWNER (as-contract tx-sender))
+(define-constant CONTRACT-OWNER tx-sender)
 (define-constant MAX-ACHIEVEMENT-NAME-LENGTH 100)
 (define-constant MAX-DESCRIPTION-LENGTH 500)
 (define-constant MAX-CATEGORY-LENGTH 50)
@@ -27,11 +27,11 @@
 ;; data maps and vars
 ;; Achievement definitions - what achievements exist and their requirements
 (define-map achievement-definitions
-  (id uint)
+  uint
   (tuple 
-    (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-    (description (string-ascii MAX-DESCRIPTION-LENGTH))
-    (category (string-ascii MAX-CATEGORY-LENGTH))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
+    (category (string-ascii 50))
     (reward-amount uint)
     (issuer principal)
     (active bool)
@@ -51,7 +51,7 @@
 
 ;; User profiles - basic user information and statistics
 (define-map user-profiles
-  (user principal)
+  principal
   (tuple 
     (total-achievements uint)
     (total-rewards-claimed uint)
@@ -63,11 +63,11 @@
 
 ;; Certifications - special achievements that grant certifications
 (define-map certifications
-  (id uint)
+  uint
   (tuple 
-    (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-    (description (string-ascii MAX-DESCRIPTION-LENGTH))
-    (required-achievements (list uint))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
+    (required-achievements-count uint)
     (issuer principal)
     (active bool)
     (created-at uint)
@@ -85,10 +85,10 @@
 
 ;; Issuer registry - authorized issuers who can create achievements
 (define-map authorized-issuers
-  (issuer principal)
+  principal
   (tuple 
-    (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-    (description (string-ascii MAX-DESCRIPTION-LENGTH))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
     (active bool)
     (registered-at uint)
   )
@@ -192,9 +192,17 @@
   (map-get? certifications certification-id)
 )
 
+;; Helper function to get user achievement count
+(define-private (get-user-achievement-count (user principal))
+  (match (map-get? user-profiles user)
+    profile (get total-achievements profile)
+    u0
+  )
+)
+
 ;; Helper function to check if user meets certification requirements
-(define-private (user-meets-certification-requirements (user principal) (required-achievements (list uint)))
-  (fold check-achievement-requirement required-achievements true)
+(define-private (user-meets-certification-requirements (user principal) (required-achievements-count uint))
+  (>= (get-user-achievement-count user) required-achievements-count)
 )
 
 ;; Helper function to check individual achievement requirement
