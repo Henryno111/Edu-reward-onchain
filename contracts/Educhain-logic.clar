@@ -302,11 +302,15 @@
 
 ;; Pause or unpause the contract (owner only)
 (define-public (set-contract-paused (paused bool))
-  (begin
-    ((unwrap! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED))
-    ((unwrap! (not (is-contract-paused)) ERR-INVALID-INPUT))
-    (var-set contract-paused paused)
-    (ok true)
+  (if (not (is-eq tx-sender CONTRACT-OWNER))
+    (err ERR-UNAUTHORIZED)
+    (if (is-contract-paused)
+      (err ERR-INVALID-INPUT)
+      (begin
+        (var-set contract-paused paused)
+        (ok true)
+      )
+    )
   )
 )
 
