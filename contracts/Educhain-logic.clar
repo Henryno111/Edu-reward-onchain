@@ -289,3 +289,302 @@
 
 ;; public functions
 ;;
+
+;; ===== CONTRACT ADMINISTRATION FUNCTIONS =====
+
+;; Pause or unpause the contract (owner only)
+(define-public (set-contract-paused (paused bool))
+  (begin
+    (assert! (is-owner) ERR-UNAUTHORIZED)
+    (assert! (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (var-set contract-paused paused)
+    (ok true)
+  )
+)
+
+;; Register a new authorized issuer (owner only)
+(define-public (register-issuer 
+  (issuer principal)
+  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
+  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+)
+  (begin
+    (asserts (is-owner) ERR-UNAUTHORIZED)
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (asserts (validate-string-length name MAX-ACHIEVEMENT-NAME-LENGTH) ERR-INVALID-INPUT)
+    (asserts (validate-string-length description MAX-DESCRIPTION-LENGTH) ERR-INVALID-INPUT)
+    (asserts (not (is-eq name "")) ERR-INVALID-INPUT)
+    (map-set authorized-issuers issuer 
+      (tuple 
+        (name name)
+        (description description)
+        (active true)
+        (registered-at (get-current-time))
+      )
+    )
+    (ok true)
+  )
+)
+
+;; Deactivate an authorized issuer (owner only)
+(define-public (deactivate-issuer (issuer principal))
+  (begin
+    (asserts (is-owner) ERR-UNAUTHORIZED)
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (match (map-get? authorized-issuers issuer)
+      issuer-data 
+      (map-set authorized-issuers issuer 
+        (merge issuer-data (tuple (active false)))
+      )
+      (err ERR-INVALID-INPUT)
+    )
+    (ok true)
+  )
+)
+
+;; ===== ACHIEVEMENT MANAGEMENT FUNCTIONS =====
+
+;; Create a new achievement (authorized issuers only)
+(define-public (create-achievement
+  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
+  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+  (category (string-ascii MAX-CATEGORY-LENGTH))
+  (reward-amount uint)
+)
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (asserts (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (asserts (validate-achievement-input name description category reward-amount) ERR-INVALID-INPUT)
+    (let ((new-achievement-id (+ (var-get total-achievements) u1)))
+      (map-set achievement-definitions new-achievement-id
+        (tuple 
+          (name name)
+          (description description)
+          (category category)
+          (reward-amount reward-amount)
+          (issuer tx-sender)
+          (active true)
+          (created-at (get-current-time))
+        )
+      )
+      (var-set total-achievements new-achievement-id)
+      (ok new-achievement-id)
+    )
+  )
+)
+
+;; Award an achievement to a user (authorized issuers only)
+(define-public (award-achievement
+  (user principal)
+  (achievement-id uint)
+)
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (asserts (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (asserts (not (user-has-achievement user achievement-id)) ERR-INVALID-INPUT)
+    (asserts (not (user-achievement-limit-reached user)) ERR-LIMIT-EXCEEDED)
+    (match (get-achievement-definition achievement-id)
+      achievement-def 
+      (begin
+        (asserts (get active achievement-def) ERR-ACHIEVEMENT-NOT-FOUND)
+        (create-or-update-user-profile user)
+        (map-set user-achievements (tuple (user user) (achievement-id achievement-id))
+          (tuple 
+            (earned-at (get-current-time))
+            (claimed false)
+            (issuer tx-sender)
+          )
+        )
+        ;; Update user profile statistics
+        (match (map-get? user-profiles user)
+          profile 
+          (map-set user-profiles user 
+            (merge profile 
+              (tuple 
+                (total-achievements (+ (get total-achievements profile) u1))
+                (total-points (+ (get total-points profile) (get reward-amount achievement-def)))
+              )
+            )
+          )
+        )
+        (ok true)
+      )
+      (err ERR-ACHIEVEMENT-NOT-FOUND)
+    )
+  )
+)
+
+;; Deactivate an achievement (issuer or owner only)
+(define-public (deactivate-achievement (achievement-id uint))
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (match (get-achievement-definition achievement-id)
+      achievement-def 
+      (begin
+        (asserts (or (is-owner) (is-eq tx-sender (get issuer achievement-def))) ERR-UNAUTHORIZED)
+        (map-set achievement-definitions achievement-id
+          (merge achievement-def (tuple (active false)))
+        )
+        (ok true)
+      )
+      (err ERR-ACHIEVEMENT-NOT-FOUND)
+    )
+  )
+)
+
+;; ===== CERTIFICATION MANAGEMENT FUNCTIONS =====
+
+;; Create a new certification (authorized issuers only)
+(define-public (create-certification
+  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
+  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+  (required-achievements (list uint))
+)
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (asserts (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (asserts (validate-certification-input name description required-achievements) ERR-INVALID-INPUT)
+    (let ((new-certification-id (+ (var-get total-certifications) u1)))
+      (map-set certifications new-certification-id
+        (tuple 
+          (name name)
+          (description description)
+          (required-achievements required-achievements)
+          (issuer tx-sender)
+          (active true)
+          (created-at (get-current-time))
+        )
+      )
+      (var-set total-certifications new-certification-id)
+      (ok new-certification-id)
+    )
+  )
+)
+
+;; Award a certification to a user (authorized issuers only)
+(define-public (award-certification
+  (user principal)
+  (certification-id uint)
+)
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (asserts (is-authorized-issuer tx-sender) ERR-UNAUTHORIZED)
+    (asserts (not (user-has-certification user certification-id)) ERR-INVALID-INPUT)
+    (asserts (not (user-certification-limit-reached user)) ERR-LIMIT-EXCEEDED)
+    (match (get-certification-definition certification-id)
+      certification-def 
+      (begin
+        (asserts (get active certification-def) ERR-CERTIFICATION-NOT-FOUND)
+        (asserts (user-meets-certification-requirements user (get required-achievements certification-def)) ERR-INVALID-INPUT)
+        (create-or-update-user-profile user)
+        (map-set user-certifications (tuple (user user) (certification-id certification-id))
+          (tuple 
+            (earned-at (get-current-time))
+            (issuer tx-sender)
+          )
+        )
+        (ok true)
+      )
+      (err ERR-CERTIFICATION-NOT-FOUND)
+    )
+  )
+)
+
+;; Deactivate a certification (issuer or owner only)
+(define-public (deactivate-certification (certification-id uint))
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (match (get-certification-definition certification-id)
+      certification-def 
+      (begin
+        (asserts (or (is-owner) (is-eq tx-sender (get issuer certification-def))) ERR-UNAUTHORIZED)
+        (map-set certifications certification-id
+          (merge certification-def (tuple (active false)))
+        )
+        (ok true)
+      )
+      (err ERR-CERTIFICATION-NOT-FOUND)
+    )
+  )
+)
+
+;; ===== REWARD MANAGEMENT FUNCTIONS =====
+
+;; Claim reward for an achievement (user only)
+(define-public (claim-achievement-reward (achievement-id uint))
+  (begin
+    (asserts (not (is-contract-paused)) ERR-INVALID-INPUT)
+    (match (get-user-achievement tx-sender achievement-id)
+      user-achievement 
+      (begin
+        (asserts (not (get claimed user-achievement)) ERR-REWARD-ALREADY-CLAIMED)
+        (match (get-achievement-definition achievement-id)
+          achievement-def 
+          (begin
+            (asserts (get active achievement-def) ERR-ACHIEVEMENT-NOT-FOUND)
+            (let ((reward-amount (get reward-amount achievement-def)))
+              (asserts (>= (var-get contract-balance) reward-amount) ERR-INSUFFICIENT-BALANCE)
+              ;; Mark as claimed
+              (map-set user-achievements (tuple (user tx-sender) (achievement-id achievement-id))
+                (merge user-achievement (tuple (claimed true)))
+              )
+              ;; Update user profile
+              (match (map-get? user-profiles tx-sender)
+                profile 
+                (map-set user-profiles tx-sender 
+                  (merge profile 
+                    (tuple (total-rewards-claimed (+ (get total-rewards-claimed profile) reward-amount)))
+                  )
+                )
+              )
+              ;; Update contract balance
+              (var-set contract-balance (- (var-get contract-balance) reward-amount))
+              ;; Transfer reward to user (in a real implementation, this would use stx-transfer)
+              (ok reward-amount)
+            )
+          )
+          (err ERR-ACHIEVEMENT-NOT-FOUND)
+        )
+      )
+      (err ERR-ACHIEVEMENT-NOT-FOUND)
+    )
+  )
+)
+
+;; ===== QUERY FUNCTIONS =====
+
+;; Get user profile information
+(define-read-only (get-user-profile (user principal))
+  (map-get? user-profiles user)
+)
+
+;; Get achievement definition
+(define-read-only (get-achievement (achievement-id uint))
+  (map-get? achievement-definitions achievement-id)
+)
+
+;; Get certification definition
+(define-read-only (get-certification (certification-id uint))
+  (map-get? certifications certification-id)
+)
+
+;; Check if user has specific achievement
+(define-read-only (has-achievement (user principal) (achievement-id uint))
+  (user-has-achievement user achievement-id)
+)
+
+;; Check if user has specific certification
+(define-read-only (has-certification (user principal) (certification-id uint))
+  (user-has-certification user certification-id)
+)
+
+;; Get contract statistics
+(define-read-only (get-contract-stats)
+  (tuple 
+    (total-achievements (var-get total-achievements))
+    (total-certifications (var-get total-certifications))
+    (total-users (var-get total-users))
+    (contract-balance (var-get contract-balance))
+    (contract-paused (var-get contract-paused))
+  )
+)
