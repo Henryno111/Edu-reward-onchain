@@ -6,8 +6,8 @@
 
 ;; constants
 (define-constant CONTRACT-OWNER tx-sender)
-(define-constant MAX-ACHIEVEMENT-NAME-LENGTH 100)
-(define-constant MAX-DESCRIPTION-LENGTH 500)
+(define-constant 100 100)
+(define-constant 500 500)
 (define-constant MAX-CATEGORY-LENGTH 50)
 (define-constant MIN-REWARD-AMOUNT u1000)
 (define-constant MAX-REWARD-AMOUNT u1000000)
@@ -313,14 +313,14 @@
 ;; Register a new authorized issuer (owner only)
 (define-public (register-issuer 
   (issuer principal)
-  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
 )
   (begin
     (asserts! (is-owner) ERR-UNAUTHORIZED)
     (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
-    (asserts! (validate-string-length name MAX-ACHIEVEMENT-NAME-LENGTH) ERR-INVALID-INPUT)
-    (asserts! (validate-string-length description MAX-DESCRIPTION-LENGTH) ERR-INVALID-INPUT)
+    (asserts! (validate-string-length name 100) ERR-INVALID-INPUT)
+    (asserts! (validate-string-length description 500) ERR-INVALID-INPUT)
     (asserts! (not (is-eq name "")) ERR-INVALID-INPUT)
     (map-set authorized-issuers issuer 
       (tuple 
@@ -354,8 +354,8 @@
 
 ;; Create a new achievement (authorized issuers only)
 (define-public (create-achievement
-  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
   (category (string-ascii MAX-CATEGORY-LENGTH))
   (reward-amount uint)
 )
@@ -444,8 +444,8 @@
 
 ;; Create a new certification (authorized issuers only)
 (define-public (create-certification
-  (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-  (description (string-ascii MAX-DESCRIPTION-LENGTH))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
   (required-achievements (list uint))
 )
   (begin
@@ -891,7 +891,7 @@
 ;; Note: Clarity doesn't have native events, but we can track important actions
 
 ;; Track achievement creation
-(define-private (track-achievement-created (achievement-id uint) (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH)))
+(define-private (track-achievement-created (achievement-id uint) (name (string-ascii 100)))
   ;; In a real implementation, this would emit an event
   (ok achievement-id)
 )
@@ -909,7 +909,7 @@
 )
 
 ;; Track certification created
-(define-private (track-certification-created (certification-id uint) (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH)))
+(define-private (track-certification-created (certification-id uint) (name (string-ascii 100)))
   ;; In a real implementation, this would emit an event
   (ok certification-id)
 )
