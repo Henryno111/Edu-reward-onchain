@@ -6,8 +6,8 @@
 
 ;; constants
 (define-constant CONTRACT-OWNER tx-sender)
-(define-constant 100 100)
-(define-constant 500 500)
+(define-constant MAX-ACHIEVEMENT-NAME-LENGTH 100)
+(define-constant MAX-DESCRIPTION-LENGTH 500)
 (define-constant MAX-CATEGORY-LENGTH 50)
 (define-constant MIN-REWARD-AMOUNT u1000)
 (define-constant MAX-REWARD-AMOUNT u1000000)
@@ -29,9 +29,9 @@
 (define-map achievement-definitions
   uint
   (tuple 
-    (name (string-ascii 100))
-    (description (string-ascii 500))
-    (category (string-ascii 50))
+    (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
+    (description (string-ascii MAX-DESCRIPTION-LENGTH))
+    (category (string-ascii MAX-CATEGORY-LENGTH))
     (reward-amount uint)
     (issuer principal)
     (active bool)
@@ -65,8 +65,8 @@
 (define-map certifications
   uint
   (tuple 
-    (name (string-ascii 100))
-    (description (string-ascii 500))
+    (name (string-ascii u100))
+    (description (string-ascii u500))
     (required-achievements-count uint)
     (issuer principal)
     (active bool)
@@ -87,8 +87,8 @@
 (define-map authorized-issuers
   principal
   (tuple 
-    (name (string-ascii 100))
-    (description (string-ascii 500))
+    (name (string-ascii u100))
+    (description (string-ascii u500))
     (active bool)
     (registered-at uint)
   )
@@ -123,7 +123,7 @@
 )
 
 ;; Helper function to validate string length
-(define-private (validate-string-length (input (string-ascii 500)) (max-length uint))
+(define-private (validate-string-length (input (string-ascii u500)) (max-length uint))
   (<= (len input) max-length)
 )
 
@@ -239,9 +239,9 @@
 
 ;; Helper function to validate achievement input
 (define-private (validate-achievement-input 
-  (name (string-ascii 100))
-  (description (string-ascii 500))
-  (category (string-ascii 50))
+  (name (string-ascii u100))
+  (description (string-ascii u500))
+  (category (string-ascii u50))
   (reward-amount uint)
 )
   (and
@@ -256,8 +256,8 @@
 
 ;; Helper function to validate certification input
 (define-private (validate-certification-input
-  (name (string-ascii 100))
-  (description (string-ascii 500))
+  (name (string-ascii u100))
+  (description (string-ascii u500))
   (required-achievements-count uint)
 )
   (and
@@ -313,8 +313,8 @@
 ;; Register a new authorized issuer (owner only)
 (define-public (register-issuer 
   (issuer principal)
-  (name (string-ascii 100))
-  (description (string-ascii 500))
+  (name (string-ascii u100))
+  (description (string-ascii u500))
 )
   (begin
     (asserts! (is-owner) ERR-UNAUTHORIZED)
@@ -354,9 +354,9 @@
 
 ;; Create a new achievement (authorized issuers only)
 (define-public (create-achievement
-  (name (string-ascii 100))
-  (description (string-ascii 500))
-  (category (string-ascii MAX-CATEGORY-LENGTH))
+  (name (string-ascii u100))
+  (description (string-ascii u500))
+  (category (string-ascii u50))
   (reward-amount uint)
 )
   (begin
@@ -444,8 +444,8 @@
 
 ;; Create a new certification (authorized issuers only)
 (define-public (create-certification
-  (name (string-ascii 100))
-  (description (string-ascii 500))
+  (name (string-ascii u100))
+  (description (string-ascii u500))
   (required-achievements (list uint))
 )
   (begin
@@ -756,7 +756,7 @@
 )
 
 ;; Get achievement statistics by category
-(define-read-only (get-achievement-stats-by-category (category (string-ascii MAX-CATEGORY-LENGTH)))
+(define-read-only (get-achievement-stats-by-category (category (string-ascii u50)))
   (tuple 
     (category category)
     (total-achievements (var-get total-achievements))
@@ -891,7 +891,7 @@
 ;; Note: Clarity doesn't have native events, but we can track important actions
 
 ;; Track achievement creation
-(define-private (track-achievement-created (achievement-id uint) (name (string-ascii 100)))
+(define-private (track-achievement-created (achievement-id uint) (name (string-ascii u100)))
   ;; In a real implementation, this would emit an event
   (ok achievement-id)
 )
@@ -909,7 +909,7 @@
 )
 
 ;; Track certification created
-(define-private (track-certification-created (certification-id uint) (name (string-ascii 100)))
+(define-private (track-certification-created (certification-id uint) (name (string-ascii u100)))
   ;; In a real implementation, this would emit an event
   (ok certification-id)
 )
