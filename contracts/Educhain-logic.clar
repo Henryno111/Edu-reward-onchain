@@ -339,17 +339,17 @@
   (begin
     (asserts! (is-owner) ERR-UNAUTHORIZED)
     (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
-    (match (map-get? authorized-issuers issuer)
-      issuer-data 
-      (begin
-        (map-set authorized-issuers issuer 
-          (merge issuer-data (tuple (active false)))
+    (let ((issuer-data (map-get? authorized-issuers issuer)))
+      (if (is-some issuer-data)
+        (begin
+          (map-set authorized-issuers issuer 
+            (merge (unwrap! issuer-data ERR-INVALID-INPUT) (tuple (active false)))
+          )
+          (ok true)
         )
-        (ok true)
+        (err ERR-INVALID-INPUT)
       )
-      (err ERR-INVALID-INPUT)
     )
-    (ok true)
   )
 )
 
