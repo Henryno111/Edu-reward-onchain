@@ -336,19 +336,20 @@
 
 ;; Deactivate an authorized issuer (owner only)
 (define-public (deactivate-issuer (issuer principal))
-  (begin
-    (asserts! (is-owner) ERR-UNAUTHORIZED)
-    (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
-    (let ((issuer-data (map-get? authorized-issuers issuer)))
-      (if (is-some issuer-data)
-        (begin
-          (map-set authorized-issuers issuer 
-            (merge (unwrap! issuer-data ERR-INVALID-INPUT) (tuple (active false)))
+  (asserts! (is-owner) ERR-UNAUTHORIZED)
+  (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
+  (let ((issuer-data (map-get? authorized-issuers issuer)))
+    (if (is-some issuer-data)
+      (begin
+        (map-set authorized-issuers issuer
+          (merge
+            (unwrap! issuer-data ERR-INVALID-INPUT)
+            (tuple (active false))
           )
-          (ok true)
         )
-        (err ERR-INVALID-INPUT)
+        (ok true)
       )
+      (err ERR-INVALID-INPUT)
     )
   )
 )
