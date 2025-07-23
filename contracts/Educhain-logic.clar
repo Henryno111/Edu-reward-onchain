@@ -29,9 +29,9 @@
 (define-map achievement-definitions
   uint
   (tuple 
-    (name (string-ascii MAX-ACHIEVEMENT-NAME-LENGTH))
-    (description (string-ascii MAX-DESCRIPTION-LENGTH))
-    (category (string-ascii MAX-CATEGORY-LENGTH))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
+    (category (string-ascii 50))
     (reward-amount uint)
     (issuer principal)
     (active bool)
@@ -65,8 +65,8 @@
 (define-map certifications
   uint
   (tuple 
-    (name (string-ascii u100))
-    (description (string-ascii u500))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
     (required-achievements-count uint)
     (issuer principal)
     (active bool)
@@ -87,8 +87,8 @@
 (define-map authorized-issuers
   principal
   (tuple 
-    (name (string-ascii u100))
-    (description (string-ascii u500))
+    (name (string-ascii 100))
+    (description (string-ascii 500))
     (active bool)
     (registered-at uint)
   )
@@ -123,7 +123,7 @@
 )
 
 ;; Helper function to validate string length
-(define-private (validate-string-length (input (string-ascii u500)) (max-length uint))
+(define-private (validate-string-length (input (string-ascii 500)) (max-length uint))
   (<= (len input) max-length)
 )
 
