@@ -239,9 +239,9 @@
 
 ;; Helper function to validate achievement input
 (define-private (validate-achievement-input 
-  (name (string-ascii u100))
-  (description (string-ascii u500))
-  (category (string-ascii u50))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
+  (category (string-ascii 50))
   (reward-amount uint)
 )
   (and
@@ -256,8 +256,8 @@
 
 ;; Helper function to validate certification input
 (define-private (validate-certification-input
-  (name (string-ascii u100))
-  (description (string-ascii u500))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
   (required-achievements-count uint)
 )
   (and
@@ -271,7 +271,7 @@
 ;; Helper function to check if user has reached achievement limit
 (define-private (user-achievement-limit-reached (user principal))
   (match (map-get? user-profiles user)
-    profile (>= (get total-achievements profile) MAX-ACHIEVEMENTS-PER-USER)
+    profile (>= (get total-achievements profile) u100)
     false
   )
 )
@@ -279,7 +279,7 @@
 ;; Helper function to check if user has reached certification limit
 (define-private (user-certification-limit-reached (user principal))
   (let ((certification-count (len (get-user-certification-ids user))))
-    (>= certification-count MAX-CERTIFICATIONS-PER-USER)
+    (>= certification-count u50)
   )
 )
 
@@ -313,14 +313,14 @@
 ;; Register a new authorized issuer (owner only)
 (define-public (register-issuer 
   (issuer principal)
-  (name (string-ascii u100))
-  (description (string-ascii u500))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
 )
   (begin
     (asserts! (is-owner) ERR-UNAUTHORIZED)
     (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
-    (asserts! (validate-string-length name 100) ERR-INVALID-INPUT)
-    (asserts! (validate-string-length description 500) ERR-INVALID-INPUT)
+    (asserts! (validate-string-length name u100) ERR-INVALID-INPUT)
+    (asserts! (validate-string-length description u500) ERR-INVALID-INPUT)
     (asserts! (not (is-eq name "")) ERR-INVALID-INPUT)
     (map-set authorized-issuers issuer 
       (tuple 
@@ -354,9 +354,9 @@
 
 ;; Create a new achievement (authorized issuers only)
 (define-public (create-achievement
-  (name (string-ascii u100))
-  (description (string-ascii u500))
-  (category (string-ascii u50))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
+  (category (string-ascii 50))
   (reward-amount uint)
 )
   (begin
@@ -444,8 +444,8 @@
 
 ;; Create a new certification (authorized issuers only)
 (define-public (create-certification
-  (name (string-ascii u100))
-  (description (string-ascii u500))
+  (name (string-ascii 100))
+  (description (string-ascii 500))
   (required-achievements (list uint))
 )
   (begin
@@ -756,7 +756,7 @@
 )
 
 ;; Get achievement statistics by category
-(define-read-only (get-achievement-stats-by-category (category (string-ascii u50)))
+(define-read-only (get-achievement-stats-by-category (category (string-ascii 50)))
   (tuple 
     (category category)
     (total-achievements (var-get total-achievements))
@@ -891,7 +891,7 @@
 ;; Note: Clarity doesn't have native events, but we can track important actions
 
 ;; Track achievement creation
-(define-private (track-achievement-created (achievement-id uint) (name (string-ascii u100)))
+(define-private (track-achievement-created (achievement-id uint) (name (string-ascii 100)))
   ;; In a real implementation, this would emit an event
   (ok achievement-id)
 )
@@ -909,7 +909,7 @@
 )
 
 ;; Track certification created
-(define-private (track-certification-created (certification-id uint) (name (string-ascii u100)))
+(define-private (track-certification-created (certification-id uint) (name (string-ascii 100)))
   ;; In a real implementation, this would emit an event
   (ok certification-id)
 )
