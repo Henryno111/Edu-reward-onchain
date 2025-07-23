@@ -341,8 +341,11 @@
     (asserts! (not (is-contract-paused)) ERR-INVALID-INPUT)
     (match (map-get? authorized-issuers issuer)
       issuer-data 
-      (map-set authorized-issuers issuer 
-        (merge issuer-data (tuple (active false)))
+      (begin
+        (map-set authorized-issuers issuer 
+          (merge issuer-data (tuple (active false)))
+        )
+        (ok true)
       )
       (err ERR-INVALID-INPUT)
     )
